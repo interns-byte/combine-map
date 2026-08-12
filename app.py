@@ -456,28 +456,50 @@ def build_component(network: dict) -> str:
     return positions;
   }
 
-  function groupedTypeOrgPositions(cx, cy, typePositions, orgR) {
-    const positions = new Map();
+  function groupedTypeLayout(cx, cy, typeR, orgR) {
+    const orgPositions = new Map();
+    const typePositions = new Map();
+    const ordered = [];
+
+    // Keep organizations of the same type adjacent, but preserve one perfectly
+    // even angular step around the full outer ring.
     DATA.types.forEach(type => {
-      const orgs = fixedOrganizations.filter(org => org.type === type);
-      const tp = typePositions.get(type);
-      if (!tp || !orgs.length) return;
-      const count = orgs.length;
-      const span = Math.min(1.06, Math.max(0.34, 0.12 * Math.max(1, count - 1)));
-      orgs.forEach((org, idx) => {
-        const rel = count === 1 ? 0 : (idx / (count - 1)) - 0.5;
-        const angle = tp.angle + rel * span;
-        let radiusBump = 0;
-        if (count >= 10) radiusBump = (idx % 3 - 1) * 14;
-        else if (count >= 6) radiusBump = idx % 2 === 0 ? -10 : 10;
-        positions.set(org.name, {
-          x: cx + (orgR + radiusBump) * Math.cos(angle),
-          y: cy + (orgR + radiusBump) * Math.sin(angle),
-          angle
-        });
+      fixedOrganizations
+        .filter(org => org.type === type)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(org => ordered.push(org));
+    });
+
+    const total = Math.max(1, ordered.length);
+    const step = (Math.PI * 2) / total;
+    const start = -Math.PI / 2;
+
+    ordered.forEach((org, i) => {
+      const angle = start + i * step;
+      orgPositions.set(org.name, {
+        x: cx + orgR * Math.cos(angle),
+        y: cy + orgR * Math.sin(angle),
+        angle
       });
     });
-    return positions;
+
+    // Put each type node at the midpoint of its organization's arc, so the
+    // inner node sits directly inside the group it represents.
+    let offset = 0;
+    DATA.types.forEach(type => {
+      const count = ordered.filter(org => org.type === type).length;
+      if (!count) return;
+      const midpointIndex = offset + (count - 1) / 2;
+      const angle = start + midpointIndex * step;
+      typePositions.set(type, {
+        x: cx + typeR * Math.cos(angle),
+        y: cy + typeR * Math.sin(angle),
+        angle
+      });
+      offset += count;
+    });
+
+    return {orgPositions, typePositions};
   }
 
   function drawOrganization(org, p, cx, cy, orgR, opacity, rings, showFullLabel) {
@@ -537,16 +559,11 @@ def build_component(network: dict) -> str:
     svg.innerHTML = '';
     const cx = 450, cy = 390;
     const typeR = 176;
-    const orgR = 292;
-    const typePositions = new Map();
+    const orgR = 326;
     const hasSelection = Boolean(state.selectedType);
-
-    DATA.types.forEach((type, i) => {
-      const angle = -Math.PI/2 + (i / DATA.types.length) * Math.PI * 2;
-      typePositions.set(type, {x:cx + typeR*Math.cos(angle), y:cy + typeR*Math.sin(angle), angle});
-    });
-
-    const orgPositions = groupedTypeOrgPositions(cx, cy, typePositions, orgR);
+    const groupedLayout = groupedTypeLayout(cx, cy, typeR, orgR);
+    const typePositions = groupedLayout.typePositions;
+    const orgPositions = groupedLayout.orgPositions;
 
     DATA.types.forEach(type => {
       const p = typePositions.get(type);
