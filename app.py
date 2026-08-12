@@ -456,6 +456,30 @@ def build_component(network: dict) -> str:
     return positions;
   }
 
+  function groupedTypeOrgPositions(cx, cy, typePositions, orgR) {
+    const positions = new Map();
+    DATA.types.forEach(type => {
+      const orgs = fixedOrganizations.filter(org => org.type === type);
+      const tp = typePositions.get(type);
+      if (!tp || !orgs.length) return;
+      const count = orgs.length;
+      const span = Math.min(1.06, Math.max(0.34, 0.12 * Math.max(1, count - 1)));
+      orgs.forEach((org, idx) => {
+        const rel = count === 1 ? 0 : (idx / (count - 1)) - 0.5;
+        const angle = tp.angle + rel * span;
+        let radiusBump = 0;
+        if (count >= 10) radiusBump = (idx % 3 - 1) * 14;
+        else if (count >= 6) radiusBump = idx % 2 === 0 ? -10 : 10;
+        positions.set(org.name, {
+          x: cx + (orgR + radiusBump) * Math.cos(angle),
+          y: cy + (orgR + radiusBump) * Math.sin(angle),
+          angle
+        });
+      });
+    });
+    return positions;
+  }
+
   function drawOrganization(org, p, cx, cy, orgR, opacity, rings, showFullLabel) {
     if (opacity <= 0) return;
     const current = state.organization === org.name;
@@ -513,8 +537,7 @@ def build_component(network: dict) -> str:
     svg.innerHTML = '';
     const cx = 450, cy = 390;
     const typeR = 176;
-    const orgR = 326;
-    const orgPositions = fixedOrgPositions(cx, cy, orgR);
+    const orgR = 292;
     const typePositions = new Map();
     const hasSelection = Boolean(state.selectedType);
 
@@ -522,6 +545,8 @@ def build_component(network: dict) -> str:
       const angle = -Math.PI/2 + (i / DATA.types.length) * Math.PI * 2;
       typePositions.set(type, {x:cx + typeR*Math.cos(angle), y:cy + typeR*Math.sin(angle), angle});
     });
+
+    const orgPositions = groupedTypeOrgPositions(cx, cy, typePositions, orgR);
 
     DATA.types.forEach(type => {
       const p = typePositions.get(type);
