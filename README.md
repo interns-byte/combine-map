@@ -24,3 +24,13 @@ python3 -m streamlit run app.py
 ## Streamlit Community Cloud
 
 Replace the existing `app.py` in your GitHub repository with this version and commit the change. The existing workbook can stay where it is; the app checks both `data/AUiX_Expertise_Map_Data.xlsx` and the repository root.
+
+## v9.4 header branding
+- Adds centered DRADIS and AUiX logos above the page title.
+- Adds the note: “Best viewed on desktop or tablet.”
+- Logo PNGs are included in the `assets/` folder and must be committed with `app.py`.
+
+
+
+## v9.5 deployment note
+Both header logos are embedded directly in `app.py`, so no `assets/` folder is required on GitHub.
