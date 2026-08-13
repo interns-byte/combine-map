@@ -12,8 +12,8 @@ from openpyxl import load_workbook
 APP_DIR = Path(__file__).resolve().parent
 DATA_FILENAME = "AUiX_Expertise_Map_Data.xlsx"
 DEFAULT_DATA = next(
-    (candidate for candidate in (APP_DIR / "data" / DATA_FILENAME, APP_DIR / DATA_FILENAME) if candidate.exists()),
-    APP_DIR / "data" / DATA_FILENAME,
+    (candidate for candidate in (APP_DIR / DATA_FILENAME, APP_DIR / "data" / DATA_FILENAME) if candidate.exists()),
+    APP_DIR / DATA_FILENAME,
 )
 
 TYPE_ORDER = [
@@ -861,7 +861,7 @@ with st.sidebar:
     st.code("Stakeholders\nExpertise_Links\nExpertise")
 
 try:
-    network = load_network_data(uploaded.getvalue() if uploaded else None)
+    network = load_network_data(uploaded.getvalue() if uploaded else DEFAULT_DATA.read_bytes())
 except Exception as exc:
     st.error(f"Could not load the workbook: {exc}")
     st.stop()
